@@ -2,6 +2,9 @@
 const express = require('express');
 const app = express();
 const port = 8000;
+//setting up mongodb
+const db = require('./config/mongoose');
+const MongoStore = require('connect-mongo');
 //setting up templete engine
 app.set('view engine','ejs');
 app.set('views','./views');
