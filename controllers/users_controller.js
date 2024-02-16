@@ -47,6 +47,65 @@ module.exports.create = async function (req, res) {
   }
 };
 //sign in and create the session for the user
-module.exports.createSession = function (req, res) {
-  return res.redirect("/");
+module.exports.createSession = async function (req, res) {
+  try {
+    // Find the user
+    let user = await User.findOne({ email: req.body.email });
+
+    // If user not found or password doesn't match, redirect back
+    if (!user || user.password !== req.body.password) {
+      return res.redirect("back");
+    }
+
+    // Set cookie with user id
+    res.cookie("user_id", user.id);
+
+    // Redirect to user profile
+    return res.redirect("/users/profile");
+  } catch (err) {
+    console.error("Error in user sign-in:", err.message);
+    return res.status(403).json({
+      message: "Unauthorized!",
+    });
+  }
+};
+//show the profile only if the user is authenticated
+module.exports.profile = async function (req,res){
+  try{
+    if(req.cookies.user_id){
+      let user = await User.findById(req.cookies.user_id);
+      if(user){
+        return res.render('users_profile', {
+          title: "User Profile",
+          user: user
+        })
+      }else{
+        return res.redirect('/users/sign_in');
+      }
+    }else{
+      return res.redirect('/users/sign_in');
+    }
+  }catch(err){
+    console.log("Invalid Username/Password",err);
+    return res.redirect('users/sign_in');
+  }
+}
+
+//collect the data from the profile and save into the database
+module.exports.trackHabit = async function (req, res) {
+  try {
+    const user = res.locals.user;
+    user.diet = req.body.diet;
+    user.book = req.body.book;
+    user.walk = req.body.walk;
+    user.coding = req.body.coding;
+    user.homework = req.body.homework;
+    user.skincare = req.body.skincare;
+    await user.save();
+  } catch (err) {
+    console.log("Error on tracking the habit", err.message);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
 };
