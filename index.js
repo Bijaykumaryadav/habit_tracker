@@ -8,6 +8,9 @@ const port = 8000;
 const db = require('./config/mongoose');
 const MongoStore = require('connect-mongo');
 const session = require('express-session');
+//setting passport middleware
+const passport = require("passport");
+const passportLocal = require("./config/passport-local-strategy");
 // Middleware to parse incoming request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

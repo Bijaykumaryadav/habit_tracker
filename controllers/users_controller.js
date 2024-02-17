@@ -1,6 +1,6 @@
 //users_controller.js
 const User = require("../models/users");
-const { Cookie } = require("express-session");
+// const { Cookie } = require("express-session");
 //user the sign up page
 module.exports.signUp = function (req, res) {
   return res.render("user_sign_up", {
@@ -64,13 +64,13 @@ module.exports.createSession = async function (req, res) {
     }
 
     //Log user authentication
-    console.log(`User ${user.name} authenticated successfully`);
+    // console.log(`User ${user.name} authenticated successfully`);
 
     // Set cookie with user id
-    res.cookie("user_id", user.id);
+    // res.cookie("user_id", user.id);
 
     //Log saved cookies
-    console.log("Saved cookies:", req.cookies);
+    // console.log("Saved cookies:", req.cookies);
 
     // Redirect to user profile
     return res.redirect("/users/profile");
