@@ -14,7 +14,39 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-    }
+    },
+    habits: [
+      {
+        date: {
+          type: Date,
+          required: true,
+        },
+        diet: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+        walk: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+        book: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+        coding: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+        homework: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+        skincare: {
+          type: String,
+          enum: ["done", "not done", "none"],
+        },
+      },
+    ],
   },
   {
     timestamps: true,
