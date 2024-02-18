@@ -1,5 +1,7 @@
 //users_controller.js
 const User = require("../models/users");
+const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 // const { Cookie } = require("express-session");
 //user the sign up page
 module.exports.signUp = function (req, res) {
@@ -53,29 +55,56 @@ module.exports.create = async function (req, res) {
   }
 };
 //sign in and create the session for the user
+// module.exports.createSession = async function (req, res) {
+//   try {
+//     // Find the user
+//     let user = await User.findOne({ email: req.body.email });
+//     console.log(user);
+//     // If user not found or password doesn't match, redirect back
+//     if (!user || user.password !== req.body.password) {
+//       return res.redirect("back");
+//     }
+
+//     //Log user authentication
+//     // console.log(`User ${user.name} authenticated successfully`);
+
+//     // Set cookie with user id
+//     // res.cookie("user_id", user.id);
+
+//     //Log saved cookies
+//     // console.log("Saved cookies:", req.cookies);
+
+//     // Redirect to user profile
+//     return res.redirect("/users/profile");
+//   } catch (err) {
+//     console.error("Error in user sign-in:", err);
+//     return res.status(403).json({
+//       message: "Unauthorized!",
+//     });
+//   }
+// };
 module.exports.createSession = async function (req, res) {
   try {
     // Find the user
     let user = await User.findOne({ email: req.body.email });
 
-    // If user not found or password doesn't match, redirect back
-    if (!user || user.password !== req.body.password) {
+    // If user not found, redirect back
+    if (!user) {
       return res.redirect("back");
     }
 
-    //Log user authentication
-    // console.log(`User ${user.name} authenticated successfully`);
+    // Compare hashed password with user input
+    const isMatch = await bcrypt.compare(req.body.password, user.password);
 
-    // Set cookie with user id
-    // res.cookie("user_id", user.id);
+    // If password doesn't match, redirect back
+    if (!isMatch) {
+      return res.redirect("back");
+    }
 
-    //Log saved cookies
-    // console.log("Saved cookies:", req.cookies);
-
-    // Redirect to user profile
+    // Redirect to user profile on successful authentication
     return res.redirect("/users/profile");
   } catch (err) {
-    console.error("Error in user sign-in:", err.message);
+    console.error("Error in user sign-in:", err);
     return res.status(403).json({
       message: "Unauthorized!",
     });
@@ -84,23 +113,26 @@ module.exports.createSession = async function (req, res) {
 //show the profile only if the user is authenticated
 module.exports.profile = async function (req, res) {
   try {
-    if (req.cookies.user_id) {
-      let user = await User.findById(req.cookies.user_id);
-      if (user) {
-        console.log(`User ${user.name} authenticated.`);
-        return res.render("users_profile", {
-          title: "User Profile",
-          user: user,
-        });
-      } else {
-        return res.redirect("/users/sign_in");
-      }
+    // if (req.cookies.user_id) {
+    // let user = await User.findById(req.cookies.user_id);
+    let user = await User.findById(req.user._id);
+    console.log(user);
+    if (user) {
+      // console.log(`User ${user.name} authenticated.`);
+      return res.render("users_profile", {
+        title: "User Profile",
+        user: user,
+      });
     } else {
       return res.redirect("/users/sign_in");
     }
+    // }
+    // else {
+    //   return res.redirect("/users/sign_in");
+    // }
   } catch (err) {
     console.log("Invalid Username/Password", err);
-    return res.redirect("users/sign_in");
+    return res.redirect("/users/sign_in");
   }
 };
 
@@ -108,10 +140,10 @@ module.exports.profile = async function (req, res) {
 module.exports.trackHabit = async function (req, res) {
   try {
     // Retrieve user id from cookie
-    const userId = req.cookies.user_id;
+    // const userId = req.cookies.user_id;
 
     // Find user by id
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id);
 
     // Check if user exists
     if (!user) {
@@ -145,12 +177,87 @@ module.exports.trackHabit = async function (req, res) {
   }
 };
 //create a destroy session for a user
-module.exports.destroySession = async function (req, res) {
-  try {
-    res.clearCookie("user_id");
+module.exports.destroySession = function (req, res) {
+  // Log out the user and then redirect
+  req.logout(function (err) {
+    if (err) {
+      console.log("Error in logging out", err);
+      return;
+    }
     return res.redirect("/");
+  });
+};
+
+//to show the form of the forgot password
+module.exports.forgotPassword = function (req, res) {
+  return res.render("forgotten_password", {
+    title: "Forgot Password!",
+  });
+};
+
+// Function to generate a random token
+function generateToken() {
+  return crypto.randomBytes(20).toString("hex");
+}
+
+// Reset password request handler
+module.exports.collectForgotPassword = async function (req, res) {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (user) {
+      // Generate a token
+      const token = generateToken();
+
+      // Associate the token with the user
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = Date.now() + 3600000; // Token expiry in 1 hour
+
+      // Save the user
+      await user.save();
+
+      // Send the token to the user (this is where you'd typically send an email)
+      console.log("Reset token generated:", token);
+
+      // Redirect or respond accordingly
+      return res.redirect("/");
+    } else {
+      return res.redirect("/users/forgot-password");
+    }
   } catch (err) {
-    console.log("Error in destroying session", err);
+    console.error("Error in generating reset token:", err);
+    return res.redirect("back");
+  }
+};
+
+// Reset password form action controller
+// Reset password form action controller
+module.exports.resetPassword = async function (req, res) {
+  try {
+    if (req.params.token) {
+      const user = await User.findOne({
+        resetPasswordToken: req.params.token,
+        resetPasswordExpires: { $gt: Date.now() },
+      });
+      console.log(req.params.token);
+      if (user) {
+        return res.render("reset_password", {
+          title: "Reset Password",
+          user_id: user._id,
+        });
+      } else {
+        // Token is invalid or expired
+        // req.flash("error", "Password reset token is invalid or has expired.");
+        return res.redirect("/users/reset_password");
+      }
+    } else {
+      // Render the reset password page without the token
+      return res.render("reset_password", {
+        title: "Reset Password",
+        user_id: null, // or any other default value you want to pass
+      });
+    }
+  } catch (err) {
+    console.error("Error in reset password:", err);
     return res.redirect("back");
   }
 };

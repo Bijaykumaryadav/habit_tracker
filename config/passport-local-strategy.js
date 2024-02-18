@@ -1,7 +1,7 @@
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("../models/users");
-const bcrypt = req("bcrypt");
+const bcrypt = require("bcrypt");
 //serializing user to decide which key is to be set in cookie
 passport.serializeUser(function (user, done) {
   done(null, user.id);
@@ -62,9 +62,13 @@ passport.checkAuthentication = function (req, res, next) {
 };
 
 //set the authenticated user
-passport.setAuthenticatdUser = function (req, res, next) {
-  //res.user contains the current signed in user from the session cookie and we are just sending this to the locals for the views
+// Set the authenticated user
+passport.setAuthenticatedUser = function (req, res, next) {
+  // res.user contains the current signed-in user from the session cookie and we are just sending this to the locals for the views
   if (req.isAuthenticated()) {
     res.locals.user = req.user;
   }
+  next(); // Call next to proceed to the next middleware in the chain
 };
+
+module.exports = passport;
