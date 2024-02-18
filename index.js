@@ -11,6 +11,8 @@ const session = require("express-session");
 //setting passport middleware
 const passport = require("passport");
 const passportLocal = require("./config/passport-local-strategy");
+//to set the google authentication
+const googleStrategy = require('./config/passport-google-oauth-2-strategy');
 // Middleware to parse incoming request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
