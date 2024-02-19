@@ -83,22 +83,27 @@ module.exports.create = async function (req, res) {
 //     });
 //   }
 // };
+// Modify createSession function to handle Google OAuth users
 module.exports.createSession = async function (req, res) {
   try {
-    // Find the user
-    let user = await User.findOne({ email: req.body.email });
-
-    // If user not found, redirect back
-    if (!user) {
-      return res.redirect("back");
-    }
-
-    // Compare hashed password with user input
-    const isMatch = await bcrypt.compare(req.body.password, user.password);
-
-    // If password doesn't match, redirect back
-    if (!isMatch) {
-      return res.redirect("back");
+    let user;
+    if (req.user) {
+      // User authenticated via local strategy
+      user = req.user;
+    } else if (req.body.email && req.body.token) {
+      // User authenticated via Google OAuth
+      user = await User.findOne({ email: req.body.email });
+      if (!user) {
+        // Create a new user if not found
+        user = await User.create({
+          name: req.body.name,
+          email: req.body.email,
+          password: req.body.token, // Store token as password temporarily
+        });
+      }
+    } else {
+      // Neither local nor Google OAuth authentication details provided
+      return res.redirect("/users/sign_in");
     }
 
     // Redirect to user profile on successful authentication
@@ -110,6 +115,7 @@ module.exports.createSession = async function (req, res) {
     });
   }
 };
+
 //show the profile only if the user is authenticated
 module.exports.profile = async function (req, res) {
   try {
