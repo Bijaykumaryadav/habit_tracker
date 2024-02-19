@@ -1,10 +1,15 @@
 //users_controller.js
 const User = require("../models/users");
+const CalendarEvent = require("../models/calendar_events");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 // const { Cookie } = require("express-session");
 //user the sign up page
 module.exports.signUp = function (req, res) {
+  //if user is already signed in don't show the signin page rather the signin page rather show profile page
+  if (req.isAuthenticated) {
+    return res.render("/users/profile");
+  }
   return res.render("user_sign_up", {
     title: "habit_tracker | Sign Up",
   });
@@ -23,7 +28,7 @@ module.exports.create = async function (req, res) {
   const { name, email, password, confirm_password } = req.body;
   try {
     // Check if passwords match
-    if (req.body.password !== req.body.confirm_password) {
+    if (req.body.password !== confirm_password) {
       return res.redirect("/users/sign_up");
     }
 
@@ -265,5 +270,57 @@ module.exports.resetPassword = async function (req, res) {
   } catch (err) {
     console.error("Error in reset password:", err);
     return res.redirect("back");
+  }
+};
+//to collect password from above form and finally update the password of user
+module.exports.updatePassword = async function (req, res) {
+  try {
+    const user = await User.findById(req.body.userId);
+    if (user) {
+      // Check if the current password matches
+      const isMatch = await bcrypt.compare(
+        req.body.currentPassword,
+        user.password
+      );
+      if (isMatch) {
+        // Current password matches, update the password
+        user.password = req.body.newPassword;
+        await user.save();
+        return res.redirect("/users/profile");
+      } else {
+        // Current password does not match, render back with an error
+        return res.render("reset_password", {
+          title: "Reset Password",
+          user_id: req.body.userId,
+          error: "Current password is incorrect",
+        });
+      }
+    } else {
+      return res.redirect("/users/profile");
+    }
+  } catch (err) {
+    console.log("Error in updating password", err);
+    return res.redirect("/users/profile");
+  }
+};
+
+//to show calendar
+module.exports.showCalendar = async function (req, res) {
+  try {
+    const user = res.locals.user;
+    if (user) {
+      const calendarEventId = user.calendarEvent.findById(calendarEventId);
+      console.log(calendarEvent);
+      const calendarEventDates = calendarEvent.dates.map((dateObj) => {
+        return { date: dateObj.date.toISOString().split("T")[0] };
+      });
+      return res.render("calendar", {
+        title: "Calendar",
+        calendarEventDates: calendarEventDates,
+      });
+    }
+  } catch (err) {
+    console.log("Eror in fetching calendar events:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

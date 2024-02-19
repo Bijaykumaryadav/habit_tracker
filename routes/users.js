@@ -8,7 +8,7 @@ router.get("/sign_in", usersController.signIn);
 //create the routes for the forgot password
 router.get("/forgot-password", usersController.forgotPassword);
 
-router.post("/forgot_password", usersController.collectForgotPassword);
+router.post("/forgot-password", usersController.collectForgotPassword);
 
 router.post("/create", usersController.create);
 router.post(
@@ -27,9 +27,7 @@ router.get("/profile", passport.checkAuthentication, usersController.profile);
 //routes for the resetting the password
 router.get("/reset_password", usersController.resetPassword);
 router.get("/reset_password/:token", usersController.resetPassword);
-// router.post("/reset_password", usersController.updatePassword);
-//final routes for updating the password
-// router.post('reset-password',usersController.updatePassword);
+router.post("/reset_password", usersController.updatePassword);
 //for the logout of the user
 router.get("/logout", usersController.destroySession);
 //to collect the data from the profile
