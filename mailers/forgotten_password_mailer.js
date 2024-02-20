@@ -16,6 +16,7 @@ module.exports.forgottenPassword = function (userEmail, token) {
       if (err) {
         console.log("Error on sending reset password link", err);
       }
+      console.log('Reset link sent!',info);
     }
   );
 };

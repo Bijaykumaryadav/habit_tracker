@@ -1,6 +1,8 @@
 //users_controller.js
 const User = require("../models/users");
 const CalendarEvent = require("../models/calendar_events");
+const userSignUpMailer = require("../mailers/user_sign_up_mailer");
+const forgottenPasswordMailer = require("../mailers/forgotten_password_mailer");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 // const { Cookie } = require("express-session");
@@ -205,42 +207,26 @@ module.exports.forgotPassword = function (req, res) {
     title: "Forgot Password!",
   });
 };
-
-// Function to generate a random token
-function generateToken() {
-  return crypto.randomBytes(20).toString("hex");
-}
-
-// Reset password request handler
+//collect data from forget password
 module.exports.collectForgotPassword = async function (req, res) {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (user) {
-      // Generate a token
-      const token = generateToken();
-
-      // Associate the token with the user
-      user.resetPasswordToken = token;
-      user.resetPasswordExpires = Date.now() + 3600000; // Token expiry in 1 hour
-
-      // Save the user
-      await user.save();
-
-      // Send the token to the user (this is where you'd typically send an email)
-      console.log("Reset token generated:", token);
-
-      // Redirect or respond accordingly
+      const token = crypto.randomBytes(20).toString("hex");
+      user.token = token;
+      user.save();
+      forgottenPasswordMailer.forgottenPassword(user.email, token);
+      // req.flash("success", "Reset Email sent!");
       return res.redirect("/");
     } else {
-      return res.redirect("/users/forgot-password");
+      // req.flash("error", "Email not registered!");
+      return res.redirect("/");
     }
   } catch (err) {
-    console.error("Error in generating reset token:", err);
-    return res.redirect("back");
+    console.log("error in finding user while reseting password", err);
   }
 };
 
-// Reset password form action controller
 // Reset password form action controller
 module.exports.resetPassword = async function (req, res) {
   try {
