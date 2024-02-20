@@ -9,7 +9,7 @@ const crypto = require("crypto");
 //user the sign up page
 module.exports.signUp = function (req, res) {
   //if user is already signed in don't show the signin page rather the signin page rather show profile page
-  if (req.isAuthenticated) {
+  if (req.isAuthenticated()) {
     return res.render("/users/profile");
   }
   return res.render("user_sign_up", {
@@ -19,7 +19,7 @@ module.exports.signUp = function (req, res) {
 //setting up the sign in page
 module.exports.signIn = function (req, res) {
   return res.render("user_sign_in", {
-    title: "habit_tracker | Sign In",
+    title: "habit_tracker | Sign In"
   });
 };
 
