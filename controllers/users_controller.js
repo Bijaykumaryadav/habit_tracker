@@ -19,7 +19,7 @@ module.exports.signUp = function (req, res) {
 //setting up the sign in page
 module.exports.signIn = function (req, res) {
   return res.render("user_sign_in", {
-    title: "habit_tracker | Sign In"
+    title: "habit_tracker | Sign In",
   });
 };
 
@@ -48,13 +48,15 @@ module.exports.create = async function (req, res) {
     //   password: req.body.password,
     //   habits: new Map()
     // });
-    await User.create({
+    const newUser = await User.create({
       name,
       email,
       password,
     });
-
+    userSignUpMailer.signUp(newUser);
+    console.log("Account create successfully", newUser);
     // Redirect to sign-in page after successful signup
+
     return res.redirect("/users/sign_in");
   } catch (err) {
     console.error("Error in creating user while signing up:", err);
@@ -128,6 +130,9 @@ module.exports.profile = async function (req, res) {
   try {
     // if (req.cookies.user_id) {
     // let user = await User.findById(req.cookies.user_id);
+    // Generate a token
+    const token = crypto.randomBytes(20).toString("hex");
+    console.log(token);
     let user = await User.findById(req.user._id);
     console.log(user);
     if (user) {
@@ -135,6 +140,7 @@ module.exports.profile = async function (req, res) {
       return res.render("users_profile", {
         title: "User Profile",
         user: user,
+        token: token
       });
     } else {
       return res.redirect("/users/sign_in");
@@ -230,74 +236,54 @@ module.exports.collectForgotPassword = async function (req, res) {
 // Reset password form action controller
 module.exports.resetPassword = async function (req, res) {
   try {
-    if (req.params.token) {
-      const user = await User.findOne({
-        resetPasswordToken: req.params.token,
-        resetPasswordExpires: { $gt: Date.now() },
-      });
-      console.log(req.params.token);
-      if (user) {
-        return res.render("reset_password", {
-          title: "Reset Password",
-          user_id: user._id,
-        });
-      } else {
-        // Token is invalid or expired
-        // req.flash("error", "Password reset token is invalid or has expired.");
-        return res.redirect("/users/reset_password");
-      }
-    } else {
-      // Render the reset password page without the token
+    // Find user by reset password toke
+    const user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpires: { $gt: Date.now() }, // Check if token is not expired
+    });
+    if (user) {
+      // Render the reset password form
       return res.render("reset_password", {
         title: "Reset Password",
-        user_id: null, // or any other default value you want to pass
+        token: req.params.token, // Pass token to the view
       });
+    } else {
+      // Token not found or expired, redirect to home page with an error message
+      // req.flash("error", "Password reset token is invalid or has expired.");
+      return res.redirect("/");
     }
   } catch (err) {
-    console.error("Error in reset password:", err);
-    return res.redirect("back");
+    console.log("Error in rendering reset password form", err);
+    // Redirect to home page with an error message
+    req.flash("error", "Something went wrong. Please try again later.");
+    return res.redirect("/");
   }
 };
 //to collect password from above form and finally update the password of user
 module.exports.updatePassword = async function (req, res) {
   try {
-    const user = await User.findById(req.body.userId);
+    const user = await User.findOne({ token: req.body.token });
     if (user) {
-      // Check if the current password matches
-      const isMatch = await bcrypt.compare(
-        req.body.currentPassword,
-        user.password
-      );
-      if (isMatch) {
-        // Current password matches, update the password
-        user.password = req.body.newPassword;
-        await user.save();
-        return res.redirect("/users/profile");
-      } else {
-        // Current password does not match, render back with an error
-        return res.render("reset_password", {
-          title: "Reset Password",
-          user_id: req.body.userId,
-          error: "Current password is incorrect",
-        });
-      }
+      user.password = req.body.password;
+      user.token = undefined;
+      await user.save();
+      return res.redirect("/users/sign_in");
     } else {
-      return res.redirect("/users/profile");
+      return res.redirect("/users/forgot-password");
     }
   } catch (err) {
-    console.log("Error in updating password", err);
-    return res.redirect("/users/profile");
+    console.error("Error in updating password:", err);
+    return res.redirect("/users/forgot-password");
   }
 };
-
 //to show calendar
 module.exports.showCalendar = async function (req, res) {
   try {
     const user = res.locals.user;
     if (user) {
-      const calendarEventId = user.calendarEvent.findById(calendarEventId);
-      console.log(calendarEvent);
-      const calendarEventDates = calendarEvent.dates.map((dateObj) => {
+      const calendarEventId = user.CalendarEvent.findById(calendarEventId);
+      console.log(CalendarEvent);
+      const calendarEventDates = CalendarEvent.dates.map((dateObj) => {
         return { date: dateObj.date.toISOString().split("T")[0] };
       });
       return res.render("calendar", {

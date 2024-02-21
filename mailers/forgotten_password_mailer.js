@@ -1,13 +1,17 @@
 const nodemailer = require("../config/nodemailer");
+const crypto = require("crypto");
 
-module.exports.forgottenPassword = function (userEmail, token) {
+// Generate a token
+const token = crypto.randomBytes(20).toString("hex");
+
+module.exports.forgottenPassword = function (userEmail) {
   let htmlString = nodemailer.renderTemplate(
     { userEmail: userEmail, token: token },
-    "/password/forgotten_password.ejs"
+    "/password/forgotten_password_mailer.ejs"
   );
   nodemailer.transporter.sendMail(
     {
-      form: "ybijayyadav468@gmail.com",
+      from: "ybijayyadav468@gmail.com",
       to: userEmail,
       subject: "Reset your password",
       html: htmlString,
@@ -15,8 +19,9 @@ module.exports.forgottenPassword = function (userEmail, token) {
     function (err, info) {
       if (err) {
         console.log("Error on sending reset password link", err);
+      } else {
+        console.log("Reset link sent!", info);
       }
-      console.log('Reset link sent!',info);
     }
   );
 };

@@ -25,7 +25,6 @@ router.get(
 );
 router.get("/profile", passport.checkAuthentication, usersController.profile);
 //routes for the resetting the password
-router.get("/reset_password", usersController.resetPassword);
 router.get("/reset_password/:token", usersController.resetPassword);
 router.post("/reset_password", usersController.updatePassword);
 //for the logout of the user

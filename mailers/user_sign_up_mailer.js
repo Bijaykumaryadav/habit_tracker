@@ -1,8 +1,12 @@
 const nodemailer = require("../config/nodemailer");
-
+const crypto = require("crypto");
+const generateToken = () => {
+  let token = crypto.randomBytes(20).toString("hex");
+  return token;
+};
 module.exports.signUp = function (user) {
   let htmlString = nodemailer.renderTemplate(
-    { user: user },
+    { user: user, token: generateToken() },
     "/sign_up/sign_up_mailer.ejs"
   );
   nodemailer.transporter.sendMail(
